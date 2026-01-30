@@ -10,14 +10,10 @@ import {
   type ImageRecord,
   saveImages,
 } from "../lib/imageStore";
-import { getSettings } from "../lib/settingsStore";
 
 const localImagesGlob = import.meta.glob<{ default: ImageMetadata }>(
   "../images/*.{jpg,jpeg,png,webp}",
 );
-
-const settings = await getSettings();
-const { gallery } = settings;
 
 let storedImages = await getImages();
 
@@ -110,18 +106,18 @@ const validItems = itemsToRender.filter(
   description="A minimal, single-page photo gallery for Astro."
   htmlClass="dark horizontal-gallery"
 >
-  <div class="noise-overlay"></div>
+  <div className="noise-overlay"></div>
   
-  <main class="multi-column-container">
-    <header class="zen-header-multi">
-      <div class="zen-logo">
-        <div class="hanko"></div>
+  <main className="multi-column-container">
+    <header className="zen-header-multi">
+      <div className="zen-logo">
+        <div className="hanko"></div>
       </div>
-      <div class="zen-decoration-line"></div>
+      <div className="zen-decoration-line"></div>
     </header>
 
     <section 
-      class="multi-column-gallery" 
+      className="multi-column-gallery" 
       id="photoswipe"
     >
       {
@@ -135,12 +131,12 @@ const validItems = itemsToRender.filter(
           const aspectRatio = width / height;
           
           return (
-            <div class="gallery-item-multi" style={{ aspectRatio: `${aspectRatio}` }}>
+            <div className="gallery-item-multi" style={{ aspectRatio: `${aspectRatio}` }}>
               {isAlbum ? (
                 <a
                   href="#"
                   data-album-id={renderItem.id}
-                  class="group relative block w-full h-full overflow-hidden album-trigger"
+                  className="group relative block w-full h-full overflow-hidden album-trigger"
                 >
                   {(renderItem as RenderAlbum).coverAsset ? (
                     <Image
@@ -159,18 +155,18 @@ const validItems = itemsToRender.filter(
                       width={width}
                       height={height}
                       loading={index < 5 ? "eager" : "lazy"}
-                      class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                   )}
                   
-                  <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500"></div>
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500"></div>
                   
-                  <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                    <div class="w-12 h-12 mb-4 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                      <Folder class="w-5 h-5 text-white" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                    <div className="w-12 h-12 mb-4 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                      <Folder className="w-5 h-5 text-white" />
                     </div>
-                    <h3 class="text-2xl font-serif text-white tracking-widest uppercase mb-2">{(renderItem as RenderAlbum).title}</h3>
-                    <p class="text-white/80 font-mono text-xs tracking-wider">{(renderItem as RenderAlbum).images.length} Photos</p>
+                    <h3 className="text-2xl font-serif text-white tracking-widest uppercase mb-2">{(renderItem as RenderAlbum).title}</h3>
+                    <p className="text-white/80 font-mono text-xs tracking-wider">{(renderItem as RenderAlbum).images.length} Photos</p>
                   </div>
                 </a>
               ) : (
@@ -178,7 +174,7 @@ const validItems = itemsToRender.filter(
                   href={typeof (renderItem as RenderImage).asset === 'object' ? (renderItem as RenderImage).asset!.src : (renderItem as RenderImage).src}
                   target="_blank"
                   data-fancybox="gallery"
-                  class="group relative block w-full h-full overflow-hidden"
+                  className="group relative block w-full h-full overflow-hidden"
                 >
                   {(renderItem as RenderImage).asset ? (
                     <Image
@@ -197,14 +193,14 @@ const validItems = itemsToRender.filter(
                       width={renderItem.width}
                       height={renderItem.height}
                       loading={index < 5 ? "eager" : "lazy"}
-                      class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   )}
                   
                   {(renderItem as RenderImage).exif && (
-                    <div class="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                       {(renderItem as RenderImage).exif?.model && <p class="text-xs tracking-[0.3em] uppercase text-white/90 font-serif mb-2 border-b border-white/20 pb-2 inline-block">{(renderItem as RenderImage).exif?.model}</p>}
-                       <div class="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-white/70 tracking-wider">
+                    <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                       {(renderItem as RenderImage).exif?.model && <p className="text-xs tracking-[0.3em] uppercase text-white/90 font-serif mb-2 border-b border-white/20 pb-2 inline-block">{(renderItem as RenderImage).exif?.model}</p>}
+                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-white/70 tracking-wider">
                           {(renderItem as RenderImage).exif?.focalLength && <span>{(renderItem as RenderImage).exif?.focalLength}mm</span>}
                           {(renderItem as RenderImage).exif?.fStop && <span>f/{(renderItem as RenderImage).exif?.fStop}</span>}
                           {(renderItem as RenderImage).exif?.shutterSpeed && <span>{(renderItem as RenderImage).exif?.shutterSpeed}</span>}
@@ -221,8 +217,8 @@ const validItems = itemsToRender.filter(
     </section>
   </main>
 
-  <a href="https://instagram.com/juniesdream" target="_blank" class="instagram-link" aria-label="Instagram">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+  <a href="https://instagram.com/juniesdream" target="_blank" className="instagram-link" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
   </a>
 
   <!-- Album Modals -->
@@ -351,137 +347,253 @@ const validItems = itemsToRender.filter(
     },
   });
 
-  // Subtle scroll animations for multi-column layout
+  // Museum-like "Melt" Animation
   const items = document.querySelectorAll('.gallery-item-multi');
+  
+  const observerOptions = {
+    root: null,
+    rootMargin: '0px',
+    threshold: Array.from({ length: 20 }, (_, i) => i * 0.05) // Create thresholds every 5%
+  };
 
-  function updateScrollAnimations() {
-    items.forEach(item => {
-      const rect = item.getBoundingClientRect();
-      const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const element = entry.target as HTMLElement;
       
-      if (isVisible) {
-        // Calculate visibility progress (0 to 1)
-        const visibilityProgress = Math.min(Math.max(1 - (rect.top / window.innerHeight), 0), 1);
-        
-        // Moderate effects for multi-column layout with reduced blur
-        const blurAmount = (1 - visibilityProgress) * 2.5; // Max 2.5px blur when at top/bottom
-        const opacity = 0.9 + (visibilityProgress * 0.1); // 0.9 to 1.0
-        const scale = 0.97 + (visibilityProgress * 0.03); // 0.97 to 1.0
-        
-        (item as HTMLElement).style.filter = `blur(${blurAmount}px)`;
-        (item as HTMLElement).style.opacity = `${opacity}`;
-        (item as HTMLElement).style.transform = `scale(${scale})`;
+      // Calculate how far the element is from the center of the viewport
+      const rect = element.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const elementCenter = rect.top + rect.height / 2;
+      const windowCenter = windowHeight / 2;
+      const distanceFromCenter = Math.abs(windowCenter - elementCenter);
+      const maxDistance = windowHeight / 1.5;
+      
+      // Normalize distance (0 = center, 1 = far)
+      let progress = Math.min(distanceFromCenter / maxDistance, 1);
+      
+      // Invert for "focus" effect (1 = center, 0 = far)
+      const focus = 1 - progress;
+      
+      // Apply the "melt" effect based on position
+      // When centered: sharp, opaque, normal scale
+      // When edges: blurred, transparent, slightly distorted
+      
+      const blurAmount = progress * 8; // Max 8px blur
+      const opacity = 0.3 + (focus * 0.7); // Min 0.3 opacity
+      const scale = 0.95 + (focus * 0.05); // Scale from 0.95 to 1.0
+      const translateY = progress * 20; // Slight drift
+      
+      element.style.setProperty('--blur', `${blurAmount}px`);
+      element.style.setProperty('--opacity', `${opacity}`);
+      element.style.setProperty('--scale', `${scale}`);
+      element.style.setProperty('--translateY', `${translateY}px`);
+      
+      // Add a class when it's "focused" enough to be interactive
+      if (focus > 0.8) {
+        element.classList.add('in-focus');
+      } else {
+        element.classList.remove('in-focus');
       }
     });
+  }, observerOptions);
 
-    requestAnimationFrame(updateScrollAnimations);
-  }
+  items.forEach(item => {
+    observer.observe(item);
+  });
 
-  // Start animation loop
-  if (items.length > 0) {
-    updateScrollAnimations();
-  }
+  // Also update on scroll for smoother effect
+  window.addEventListener('scroll', () => {
+    items.forEach(item => {
+      const element = item as HTMLElement;
+      const rect = element.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const elementCenter = rect.top + rect.height / 2;
+      const windowCenter = windowHeight / 2;
+      const distanceFromCenter = Math.abs(windowCenter - elementCenter);
+      const maxDistance = windowHeight / 1.5;
+      
+      let progress = Math.min(distanceFromCenter / maxDistance, 1);
+      const focus = 1 - progress;
+      
+      const blurAmount = progress * 10;
+      const opacity = 0.2 + (focus * 0.8);
+      const scale = 0.92 + (focus * 0.08);
+      // Liquid distortion effect using skew
+      const skewY = (rect.top - (windowHeight/2)) * 0.005;
+      
+      element.style.setProperty('--blur', `${blurAmount}px`);
+      element.style.setProperty('--opacity', `${opacity}`);
+      element.style.setProperty('--scale', `${scale}`);
+      element.style.setProperty('--skew', `${skewY}deg`);
+    });
+  }, { passive: true });
 </script>
 
 <style>
-  /* Multi-Column Layout Styles */
-  .multi-column-container {
-    min-height: 100vh;
-    background-color: #000; /* Deep black background */
-    padding: 0;
-    margin: 0;
+  :root {
+    --museum-bg: #0a0a0a;
+    --museum-text: #e5e5e5;
+    --museum-accent: #ffffff;
   }
 
+  body {
+    background-color: var(--museum-bg);
+    color: var(--museum-text);
+    font-family: 'Shippori Mincho', serif;
+  }
+
+  /* Zen Header Styles - Simplified for Museum feel */
   .zen-header-multi {
-    position: sticky;
-    top: 0;
-    padding: 2rem 2rem 1rem;
+    padding: 4rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+    position: relative;
+    z-index: 20;
+  }
+
+  .zen-logo {
+    position: relative;
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
-    gap: 2rem;
-    z-index: 40;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+    justify-content: center;
   }
 
-  .zen-header-multi.modal-open {
-    pointer-events: none;
+  .hanko {
+    width: 100%;
+    height: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    position: relative;
+    transition: all 0.5s ease;
+  }
+
+  .hanko::after {
+    content: " ";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px 5px rgba(255, 255, 255, 0.2);
+  }
+
+  .zen-decoration-line {
+    width: 1px;
+    height: 100px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.3), rgba(255,255,255,0));
+  }
+
+  /* Multi-column Layout */
+  .multi-column-container {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 0 2rem 8rem;
   }
 
   .multi-column-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(660px, 1fr));
-    gap: 2rem;
-    padding: 1rem 2rem 4rem;
-    max-width: 2000px; /* Increased max-width for larger images */
-    margin: 0 auto;
+    column-count: 1;
+    column-gap: 4rem; /* Wide gaps for museum feel */
   }
 
-  @media (max-width: 768px) {
+  @media (min-width: 768px) {
     .multi-column-gallery {
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1rem;
-      padding: 1rem;
+      column-count: 2;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .multi-column-gallery {
+      column-count: 3;
     }
   }
 
   .gallery-item-multi {
+    break-inside: avoid;
+    margin-bottom: 6rem; /* Lots of vertical space */
     position: relative;
-    transition: transform 0.3s ease-out, filter 0.3s ease-out, opacity 0.3s ease-out;
-    border-radius: 8px;
-    overflow: hidden;
+    border-radius: 4px; /* Slight rounding */
     
-    /* Deep Shadows */
-    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8);
+    /* Animation Variables Initial State */
+    --blur: 0px;
+    --opacity: 1;
+    --scale: 1;
+    --skew: 0deg;
+    --translateY: 0px;
     
-    /* Allow items to size naturally based on aspect ratio */
-    width: 100%;
+    /* The Melt Effect */
+    filter: blur(var(--blur));
+    opacity: var(--opacity);
+    transform: scale(var(--scale)) skewY(var(--skew)) translateY(var(--translateY));
+    will-change: transform, filter, opacity;
+    transition: filter 0.1s linear, opacity 0.1s linear, transform 0.1s linear;
   }
 
-  /* Subtle hover effects */
-  .gallery-item-multi:hover {
-    z-index: 10;
-    transform: translateY(-4px);
-    box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9);
-  }
-  
+  /* Frame/Matte Effect */
   .gallery-item-multi img,
   .gallery-item-multi a {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5); /* Deep shadow */
   }
 
+  /* Caption/Title on Hover - Museum Label Style */
+  .gallery-item-multi::after {
+    content: attr(data-label);
+    position: absolute;
+    bottom: -30px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-family: 'Shippori Mincho', serif;
+  }
+
+  .gallery-item-multi:hover::after {
+    opacity: 1;
+  }
+
+  /* Keep Instagram link but make it subtle */
   .instagram-link {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    z-index: 60; /* Increased z-index to ensure visibility */
+    z-index: 60;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    background-color: #18181b;
-    color: #ffffff;
+    width: 40px;
+    height: 40px;
+    color: rgba(255,255,255,0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s;
+    transition: all 0.3s ease;
   }
 
   .instagram-link:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
-    background-color: #27272a;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
   }
 
   .instagram-link svg {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
   }
 
-  /* Zen Aesthetic Styles */
   .noise-overlay {
     position: fixed;
     top: 0;
@@ -492,40 +604,5 @@ const validItems = itemsToRender.filter(
     z-index: 50;
     opacity: 0.03;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  }
-
-  .zen-logo {
-    display: flex;
-    justify-content: center;
-  }
-
-  .hanko {
-    width: 42px;
-    height: 42px;
-    border: 2px solid #e11d48; /* Red seal color */
-    border-radius: 6px;
-    position: relative;
-    opacity: 0.9;
-    box-shadow: 0 0 10px rgba(225, 29, 72, 0.2);
-    transform: rotate(-3deg);
-  }
-  
-  .hanko::after {
-    content: "J"; /* Initial */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #e11d48;
-    font-family: "Shippori Mincho", serif;
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 1;
-  }
-
-  .zen-decoration-line {
-    height: 1px;
-    flex-grow: 1;
-    background: linear-gradient(to right, rgba(255,255,255,0.3) 0%, transparent 100%);
   }
 </style>
