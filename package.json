@@ -52,7 +52,7 @@
     "@types/exif-reader": "^2.0.2",
     "husky": "^9.1.7",
     "stylelint": "^16.24.0",
-    "stylelint-config-astro": "^1.0.4",
+    "stylelint-config-astro": "^2.0.0",
     "stylelint-config-standard": "^39.0.0"
   }
 }
