@@ -8,11 +8,11 @@ test('MuseumRedesign_2026-01-30', async ({ page, context }) => {
     await page.goto('http://localhost:4321');
 
     // Take screenshot
-    await page.screenshot({ path: 'museum-homepage-initial.png', { fullPage: true } });
+    await page.screenshot({ path: 'museum-homepage-initial.png', fullPage: true });
 
     // Take screenshot
-    await page.screenshot({ path: 'museum-homepage-scrolled.png', { fullPage: true } });
+    await page.screenshot({ path: 'museum-homepage-scrolled.png', fullPage: true });
 
     // Take screenshot
-    await page.screenshot({ path: 'museum-homepage-deep-scroll.png', { fullPage: true } });
+    await page.screenshot({ path: 'museum-homepage-deep-scroll.png', fullPage: true });
 });

@@ -22,3 +22,14 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# uploads
+public/uploads/*
+!public/uploads/.gitkeep
+
+# testing
+test-results/
+playwright-report/
+
+# backups
+src/images_backup/

@@ -1,61 +1,130 @@
 [
   {
-    "id": "1769729515216-xlynta-wallhaven-zy6z1j.png",
+    "id": "1769772061001-a2nuld-2024-05-11-0003.jpg",
     "type": "upload",
-    "src": "/uploads/1769729515216-xlynta-wallhaven-zy6z1j.png",
-    "width": 3840,
-    "height": 2160
+    "src": "/uploads/1769772061001-a2nuld-2024-05-11-0003.jpg",
+    "width": 2891,
+    "height": 1984,
+    "exif": {}
   },
   {
-    "id": "album-1769741367890",
-    "type": "album",
-    "title": "Test Album",
-    "description": "This is a test album for verification",
-    "images": [
-      {
-        "id": "1769741666844-npipeh-1769728310274-wallhaven-yq5o8k.jpg",
-        "type": "upload",
-        "src": "/uploads/1769741666844-npipeh-1769728310274-wallhaven-yq5o8k.jpg",
-        "width": 3500,
-        "height": 1969,
-        "exif": {}
-      }
-    ],
-    "coverImage": {
-      "id": "1769741666844-npipeh-1769728310274-wallhaven-yq5o8k.jpg",
-      "type": "upload",
-      "src": "/uploads/1769741666844-npipeh-1769728310274-wallhaven-yq5o8k.jpg",
-      "width": 3500,
-      "height": 1969,
-      "exif": {}
-    }
+    "id": "1769772061000-u0s4c8-2024-05-11-0004.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772061000-u0s4c8-2024-05-11-0004.jpg",
+    "width": 2923,
+    "height": 1987,
+    "exif": {}
   },
   {
-    "id": "1769729515208-cpo1uu-wallhaven-9ozwkk.png",
+    "id": "1769772060997-9svusg-2024-05-11-0006.jpg",
     "type": "upload",
-    "src": "/uploads/1769729515208-cpo1uu-wallhaven-9ozwkk.png",
-    "width": 3840,
-    "height": 2160
+    "src": "/uploads/1769772060997-9svusg-2024-05-11-0006.jpg",
+    "width": 2923,
+    "height": 1987,
+    "exif": {}
   },
   {
-    "id": "1769729515228-xcs1th-wallhaven-d83pkl.jpg",
+    "id": "1769772060995-nqp4nn-2024-05-11-0008.jpg",
     "type": "upload",
-    "src": "/uploads/1769729515228-xcs1th-wallhaven-d83pkl.jpg",
-    "width": 7680,
-    "height": 4320,
-    "exif": {
-      "model": "Canon EOS R5",
-      "focalLength": "85",
-      "fStop": "1.8",
-      "shutterSpeed": "1/125",
-      "iso": "400"
-    }
+    "src": "/uploads/1769772060995-nqp4nn-2024-05-11-0008.jpg",
+    "width": 2021,
+    "height": 2974,
+    "exif": {}
   },
   {
-    "id": "1769729515182-kshfd-wallhaven-vpz9r5.jpg",
+    "id": "1769772060993-fhwy4q-2024-05-11-0010.jpg",
     "type": "upload",
-    "src": "/uploads/1769729515182-kshfd-wallhaven-vpz9r5.jpg",
-    "width": 5640,
-    "height": 2400
+    "src": "/uploads/1769772060993-fhwy4q-2024-05-11-0010.jpg",
+    "width": 2908,
+    "height": 1925,
+    "exif": {}
+  },
+  {
+    "id": "1769772060992-0ge51i-2024-05-11-0011.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060992-0ge51i-2024-05-11-0011.jpg",
+    "width": 1974,
+    "height": 2983,
+    "exif": {}
+  },
+  {
+    "id": "1769772060988-et24k4-2024-05-11-0014.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060988-et24k4-2024-05-11-0014.jpg",
+    "width": 2927,
+    "height": 1937,
+    "exif": {}
+  },
+  {
+    "id": "1769772060969-qk5fvi-2024-05-11-0015.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060969-qk5fvi-2024-05-11-0015.jpg",
+    "width": 2978,
+    "height": 1971,
+    "exif": {}
+  },
+  {
+    "id": "1769772060964-c2dxpw-2024-05-11-0016.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060964-c2dxpw-2024-05-11-0016.jpg",
+    "width": 2955,
+    "height": 1956,
+    "exif": {}
+  },
+  {
+    "id": "1769772060963-giclk-2024-05-11-0020.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060963-giclk-2024-05-11-0020.jpg",
+    "width": 2936,
+    "height": 1943,
+    "exif": {}
+  },
+  {
+    "id": "1769772060961-zq8kvp-2024-05-11-0022.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060961-zq8kvp-2024-05-11-0022.jpg",
+    "width": 2899,
+    "height": 1919,
+    "exif": {}
+  },
+  {
+    "id": "1769772060959-bbi8as-2024-05-11-0024.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060959-bbi8as-2024-05-11-0024.jpg",
+    "width": 1933,
+    "height": 2921,
+    "exif": {}
+  },
+  {
+    "id": "1769772060958-mpshms-2024-05-11-0030.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060958-mpshms-2024-05-11-0030.jpg",
+    "width": 2952,
+    "height": 1954,
+    "exif": {}
+  },
+  {
+    "id": "1769772060956-sq64p-2024-05-11-0032.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060956-sq64p-2024-05-11-0032.jpg",
+    "width": 2837,
+    "height": 1878,
+    "exif": {}
+  },
+  {
+    "id": "1769772060955-yu8kkd-2024-05-11-0036.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060955-yu8kkd-2024-05-11-0036.jpg",
+    "width": 1909,
+    "height": 2884,
+    "exif": {}
+  },
+  {
+    "id": "1769772060945-ez7axo-2024-05-11-0037.jpg",
+    "type": "upload",
+    "src": "/uploads/1769772060945-ez7axo-2024-05-11-0037.jpg",
+    "width": 2884,
+    "height": 1909,
+    "exif": {}
   }
 ]
