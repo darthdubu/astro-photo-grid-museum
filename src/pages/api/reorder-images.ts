@@ -1,4 +1,3 @@
-
 import type { APIRoute } from "astro";
 import { getImages, saveImages } from "../../lib/imageStore";
 
@@ -14,10 +13,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const currentImages = await getImages();
-    
+
     // Create a map for quick lookup
     const imageMap = new Map(currentImages.map((img) => [img.id, img]));
-    
+
     // Reconstruct the array based on the new order of IDs
     // Only include IDs that actually exist in the current store
     const newImages = ids
@@ -29,8 +28,8 @@ export const POST: APIRoute = async ({ request }) => {
     // However, if we missed some, we might delete them accidentally.
     // Let's ensure we keep any that weren't mentioned (append at end).
     const sentIds = new Set(ids);
-    const missingImages = currentImages.filter(img => !sentIds.has(img.id));
-    
+    const missingImages = currentImages.filter((img) => !sentIds.has(img.id));
+
     const finalImages = [...newImages, ...missingImages];
 
     await saveImages(finalImages);

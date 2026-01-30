@@ -32,40 +32,48 @@ if (storedImages.length === 0) {
     };
   });
 
-  // 2. Scan public/uploads for existing files
-  try {
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    const files = await fs.readdir(uploadsDir);
+  // 2. Scan public/uploads for existing files (ONLY IN DEV)
+  // In production, we rely on images.json being populated.
+  // Scanning uploads requires 'sharp' and filesystem access which can be flaky in serverless if not set up perfectly.
+  if (import.meta.env.DEV) {
+    try {
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      const files = await fs.readdir(uploadsDir);
 
-    // We need 'sharp' to get dimensions for existing uploads
-    const { default: sharp } = await import("sharp");
+      // We need 'sharp' to get dimensions for existing uploads
+      const { default: sharp } = await import("sharp");
 
-    for (const file of files) {
-      if (file.match(/\.(jpg|jpeg|png|webp)$/i)) {
-        const filePath = path.join(uploadsDir, file);
-        try {
-          const buffer = await fs.readFile(filePath);
-          const metadata = await sharp(buffer).metadata();
+      for (const file of files) {
+        if (file.match(/\.(jpg|jpeg|png|webp)$/i)) {
+          const filePath = path.join(uploadsDir, file);
+          try {
+            const buffer = await fs.readFile(filePath);
+            const metadata = await sharp(buffer).metadata();
 
-          initialImages.push({
-            id: file,
-            type: "upload",
-            src: `/uploads/${file}`,
-            width: metadata.width || 800,
-            height: metadata.height || 600,
-          });
-        } catch (err) {
-          console.error(`Failed to process upload ${file}:`, err);
+            initialImages.push({
+              id: file,
+              type: "upload",
+              src: `/uploads/${file}`,
+              width: metadata.width || 800,
+              height: metadata.height || 600,
+            });
+          } catch (err) {
+            console.error(`Failed to process upload ${file}:`, err);
+          }
         }
       }
+    } catch (e) {
+      // Directory might not exist or other error, ignore
+      console.log("No uploads found or error scanning uploads:", e);
     }
-  } catch (e) {
-    // Directory might not exist or other error, ignore
-    console.log("No uploads found or error scanning uploads:", e);
   }
 
   storedImages = initialImages;
-  await saveImages(storedImages);
+
+  // Only save if we are in dev (double check handled in saveImages but good to be explicit)
+  if (import.meta.env.DEV) {
+    await saveImages(storedImages);
+  }
 }
 
 interface RenderImage extends ImageRecord {

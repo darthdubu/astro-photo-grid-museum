@@ -2,9 +2,14 @@
 import { Image } from "astro:assets";
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
-import { getImages, type ImageRecord, type Album, type GalleryItem } from "../../lib/imageStore";
-import { getSettings } from "../../lib/settingsStore";
 import { ArrowLeft } from "lucide-react";
+import {
+  type Album,
+  type GalleryItem,
+  getImages,
+  type ImageRecord,
+} from "../../lib/imageStore";
+import { getSettings } from "../../lib/settingsStore";
 
 export const prerender = false;
 
@@ -12,7 +17,9 @@ const { id } = Astro.params;
 if (!id) return Astro.redirect("/");
 
 const images = await getImages();
-const album = images.find(img => img.type === "album" && img.id === id) as Album | undefined;
+const album = images.find((img) => img.type === "album" && img.id === id) as
+  | Album
+  | undefined;
 
 if (!album) {
   return Astro.redirect("/404");

@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 
-const DATA_FILE = "images.json";
+const DATA_FILE = path.join(process.cwd(), "images.json");
 
 export interface ExifData {
   iso?: number;
@@ -43,6 +44,13 @@ export async function getImages(): Promise<GalleryItem[]> {
 }
 
 export async function saveImages(images: GalleryItem[]) {
+  // In Vercel/Serverless environment, the filesystem is read-only.
+  // We skip writing to avoid crashing, but log the attempt.
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    console.log("Skipping saveImages in production environment");
+    return;
+  }
+
   try {
     await fs.writeFile(DATA_FILE, JSON.stringify(images, null, 2));
   } catch (error) {
