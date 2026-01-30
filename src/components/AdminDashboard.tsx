@@ -3,6 +3,7 @@
 import {
   ArrowDown,
   ArrowUp,
+  Cloud,
   ExternalLink,
   Folder,
   FolderPlus,
@@ -16,9 +17,10 @@ import {
   Upload,
 } from "lucide-react";
 import type React from "react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Album, GalleryItem, ImageRecord } from "../lib/imageStore";
 import type { Settings } from "../lib/settingsStore";
+import type { S3Config } from "../lib/storageConfig";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -70,6 +72,45 @@ export default function AdminDashboard({
 
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // S3 Settings State
+  const [s3Config, setS3Config] = useState<S3Config>({
+    enabled: false,
+    endpoint: "",
+    region: "",
+    bucket: "",
+    accessKeyId: "",
+    secretAccessKey: "",
+  });
+  const [loadingS3, setLoadingS3] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === "settings") {
+      fetch("/api/storage-settings")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data) setS3Config(data);
+        })
+        .catch(console.error);
+    }
+  }, [activeTab]);
+
+  const handleSaveS3Config = async () => {
+    setLoadingS3(true);
+    try {
+      const res = await fetch("/api/storage-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(s3Config),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      alert("Storage settings saved!");
+    } catch (e) {
+      alert("Error saving settings");
+    } finally {
+      setLoadingS3(false);
+    }
+  };
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -655,6 +696,127 @@ export default function AdminDashboard({
                           required
                         />
                       </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 pt-4 border-t">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Cloud className="w-5 h-5" />
+                        Storage Configuration (S3 / Scaleway)
+                      </h3>
+                    </div>
+
+                    <div className="grid gap-4 p-4 border rounded-lg bg-muted/20">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="s3Enabled"
+                          className="rounded border-gray-300"
+                          checked={s3Config.enabled}
+                          onChange={(e) =>
+                            setS3Config({
+                              ...s3Config,
+                              enabled: e.target.checked,
+                            })
+                          }
+                        />
+                        <Label htmlFor="s3Enabled">Enable S3 Storage</Label>
+                      </div>
+
+                      {s3Config.enabled && (
+                        <>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                              <Label htmlFor="endpoint">Endpoint</Label>
+                              <Input
+                                id="endpoint"
+                                placeholder="https://s3.fr-par.scw.cloud"
+                                value={s3Config.endpoint}
+                                onChange={(e) =>
+                                  setS3Config({
+                                    ...s3Config,
+                                    endpoint: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="region">Region</Label>
+                              <Input
+                                id="region"
+                                placeholder="fr-par"
+                                value={s3Config.region}
+                                onChange={(e) =>
+                                  setS3Config({
+                                    ...s3Config,
+                                    region: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid gap-2">
+                            <Label htmlFor="bucket">Bucket Name</Label>
+                            <Input
+                              id="bucket"
+                              value={s3Config.bucket}
+                              onChange={(e) =>
+                                setS3Config({
+                                  ...s3Config,
+                                  bucket: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                              <Label htmlFor="accessKey">Access Key ID</Label>
+                              <Input
+                                id="accessKey"
+                                value={s3Config.accessKeyId}
+                                onChange={(e) =>
+                                  setS3Config({
+                                    ...s3Config,
+                                    accessKeyId: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="secretKey">
+                                Secret Access Key
+                              </Label>
+                              <Input
+                                id="secretKey"
+                                type="password"
+                                placeholder={
+                                  s3Config.secretAccessKey ? "********" : ""
+                                }
+                                onChange={(e) =>
+                                  setS3Config({
+                                    ...s3Config,
+                                    secretAccessKey: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleSaveS3Config}
+                              disabled={loadingS3}
+                            >
+                              {loadingS3
+                                ? "Saving..."
+                                : "Save Storage Settings"}
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <Button type="submit" className="w-full rounded-full">

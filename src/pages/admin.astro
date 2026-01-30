@@ -14,6 +14,7 @@ import {
   type ImageRecord,
   saveImages,
 } from "../lib/imageStore";
+import { deleteFromS3, uploadToS3 } from "../lib/s3";
 import {
   getSettings,
   saveSettings,
@@ -65,16 +66,34 @@ if (Astro.request.method === "POST") {
         if (file && file.size > 0) {
           const buffer = Buffer.from(await file.arrayBuffer());
           const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "")}`;
-          const uploadPath = path.join(
-            process.cwd(),
-            "public",
-            "uploads",
-            filename,
-          );
 
-          // Ensure directory exists
-          await fs.mkdir(path.dirname(uploadPath), { recursive: true });
-          await fs.writeFile(uploadPath, buffer);
+          let imageSrc = "";
+          let isUpload = true;
+
+          // Try S3 upload first
+          try {
+            const s3Url = await uploadToS3(buffer, filename, file.type);
+            if (s3Url) {
+              imageSrc = s3Url;
+            }
+          } catch (e) {
+            console.error("S3 Upload failed, falling back to local:", e);
+          }
+
+          // If S3 didn't work, save locally
+          if (!imageSrc) {
+            const uploadPath = path.join(
+              process.cwd(),
+              "public",
+              "uploads",
+              filename,
+            );
+
+            // Ensure directory exists
+            await fs.mkdir(path.dirname(uploadPath), { recursive: true });
+            await fs.writeFile(uploadPath, buffer);
+            imageSrc = `/uploads/${filename}`;
+          }
 
           let width = 800;
           let height = 600;
@@ -120,7 +139,7 @@ if (Astro.request.method === "POST") {
           const newImage: ImageRecord = {
             id: filename,
             type: "upload",
-            src: `/uploads/${filename}`,
+            src: imageSrc,
             width,
             height,
             exif: exifData,
@@ -130,13 +149,32 @@ if (Astro.request.method === "POST") {
       }
     } else if (action === "delete") {
       const id = formData.get("id") as string;
-      await deleteItem(id);
+      if (id) {
+        await deleteFromS3(id);
+        try {
+          const uploadPath = path.join(process.cwd(), "public", "uploads", id);
+          await fs.unlink(uploadPath);
+        } catch (e) {}
+        await deleteItem(id);
+      }
     } else if (action === "batchDelete") {
       const idsString = formData.get("ids") as string;
       if (idsString) {
         try {
           const ids = JSON.parse(idsString);
           if (Array.isArray(ids)) {
+            for (const id of ids) {
+              await deleteFromS3(id);
+              try {
+                const uploadPath = path.join(
+                  process.cwd(),
+                  "public",
+                  "uploads",
+                  id,
+                );
+                await fs.unlink(uploadPath);
+              } catch (e) {}
+            }
             await deleteItems(ids);
           }
         } catch (e) {

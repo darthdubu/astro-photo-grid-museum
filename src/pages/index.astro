@@ -165,11 +165,37 @@ const validItems = itemsToRender.filter(
           const width = renderItem.width;
           const height = renderItem.height;
           
-          // Calculate responsive sizing for multi-column layout
+          // Calculate responsive sizing for puzzle grid layout
           const aspectRatio = width / height;
-          
+          let gridColumn = "span 1";
+          let gridRow = "span 1";
+
+          // Puzzle logic based on aspect ratio
+          if (aspectRatio > 1.6) {
+            // Wide Panorama -> Span 2 cols, 1 row
+            gridColumn = "span 2";
+          } else if (aspectRatio < 0.6) {
+            // Tall Portrait -> Span 1 col, 2 rows
+            gridRow = "span 2";
+          } else if (aspectRatio > 1.2) {
+             // Landscape -> Span 2 cols, 2 rows (Big square-ish) for emphasis? 
+             // Or keep simple. Let's make "standard" landscape span 2 cols to vary rhythm
+             gridColumn = "span 2";
+          } else if (width > 1200) {
+             // High Res -> Big Block
+             gridColumn = "span 2";
+             gridRow = "span 2";
+          }
+
           return (
-            <div class="gallery-item-multi" style={{ aspectRatio: `${aspectRatio}` }}>
+            <div 
+              class="gallery-item-multi" 
+              style={{ 
+                gridColumn,
+                gridRow,
+                aspectRatio: `${aspectRatio}` 
+              }}
+            >
               {isAlbum ? (
                 <a
                   href="#"
@@ -523,76 +549,47 @@ const validItems = itemsToRender.filter(
     background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.3), rgba(255,255,255,0));
   }
 
-  /* Multi-column Layout */
+  /* Puzzle Grid Layout */
   .multi-column-container {
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: 0 2rem 8rem;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 0 8rem; /* Full width, no side padding for immersive feel */
   }
 
   .multi-column-gallery {
-    column-count: 1;
-    column-gap: 4rem; /* Wide gaps for museum feel */
+    display: grid;
+    /* Flexible grid with min item width */
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-auto-flow: dense; /* The magic "puzzle" packer */
+    gap: 0; /* Flush edges */
   }
 
-  @media (min-width: 768px) {
+  /* Adjust grid columns based on viewport */
+  @media (max-width: 768px) {
     .multi-column-gallery {
-      column-count: 2;
-    }
-  }
-
-  @media (min-width: 1200px) {
-    .multi-column-gallery {
-      column-count: 3;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
   }
 
   .gallery-item-multi {
-    break-inside: avoid;
-    display: inline-block;
-    width: 100%;
-    margin-bottom: 6rem; /* Lots of vertical space */
     position: relative;
-    border-radius: 4px; /* Slight rounding */
+    overflow: hidden;
     
-    /* Animation Variables Initial State */
-    --blur: 0px;
-    --opacity: 1;
-    --scale: 1;
-    --skew: 0deg;
-    --translateY: 0px;
-    
-    /* The Melt Effect */
-    /* Remove global filter blur, apply via mask instead */
-    opacity: var(--opacity);
-    transform: scale(var(--scale)) skewY(var(--skew)) translateY(var(--translateY));
-    will-change: transform, opacity, mask-image;
-    transition: opacity 0.1s linear, transform 0.1s linear;
+    /* Initial Animation State */
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
-  /* Apply blur only to edges using mask-image and backdrop-filter simulation */
+  /* Visible State (toggled by observer) */
+  .gallery-item-multi.in-view {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* No more blur mask, cleaner look */
   .gallery-item-multi::before {
-    content: "";
-    position: absolute;
-    inset: -20px;
-    background: inherit;
-    z-index: 2;
-    pointer-events: none;
-    backdrop-filter: blur(var(--blur));
-    mask-image: linear-gradient(to bottom, 
-      black 0%, 
-      transparent 15%, 
-      transparent 85%, 
-      black 100%
-    ), linear-gradient(to right, 
-      black 0%, 
-      transparent 15%, 
-      transparent 85%, 
-      black 100%
-    );
-    mask-composite: add;
-    opacity: 0.8; /* Subtle overlay */
-    transition: backdrop-filter 0.1s linear;
+    display: none;
   }
 
   /* Frame/Matte Effect */
@@ -602,7 +599,12 @@ const validItems = itemsToRender.filter(
     width: 100%;
     height: 100%;
     object-fit: cover;
-    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5); /* Deep shadow */
+    /* Subtle zoom on hover */
+    transition: transform 0.7s ease;
+  }
+
+  .gallery-item-multi:hover img {
+    transform: scale(1.05);
   }
 
   /* Caption/Title on Hover - Museum Label Style */
