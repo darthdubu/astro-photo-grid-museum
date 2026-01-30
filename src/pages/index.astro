@@ -197,16 +197,18 @@ const validImages = imagesToRender.filter(
     justify-content: center;
     width: 48px;
     height: 48px;
-    background-color: #ffffff;
-    color: #000000;
+    background-color: #18181b;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s;
   }
 
   .instagram-link:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+    background-color: #27272a;
   }
 
   .instagram-link svg {
