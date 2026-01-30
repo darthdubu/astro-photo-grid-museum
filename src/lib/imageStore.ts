@@ -43,7 +43,14 @@ export async function getImages(): Promise<GalleryItem[]> {
 }
 
 export async function saveImages(images: GalleryItem[]) {
-  await fs.writeFile(DATA_FILE, JSON.stringify(images, null, 2));
+  try {
+    await fs.writeFile(DATA_FILE, JSON.stringify(images, null, 2));
+  } catch (error) {
+    console.warn(
+      "Failed to save images.json (filesystem might be read-only):",
+      error,
+    );
+  }
 }
 
 export async function addImage(item: GalleryItem, albumId?: string) {
