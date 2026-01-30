@@ -2,6 +2,9 @@
 import { Image } from "astro:assets";
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
+import { Buffer } from "node:buffer";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { Folder } from "lucide-react";
 import AlbumModal from "../components/AlbumModal.astro";
 import {
@@ -18,8 +21,9 @@ const localImagesGlob = import.meta.glob<{ default: ImageMetadata }>(
 let storedImages = await getImages();
 
 if (storedImages.length === 0) {
+  // 1. Load local images from src/images (if any)
   const localKeys = Object.keys(localImagesGlob);
-  storedImages = localKeys.map((key) => {
+  const initialImages: ImageRecord[] = localKeys.map((key) => {
     const filename = key.split("/").pop();
     return {
       id: filename || key,
@@ -27,6 +31,40 @@ if (storedImages.length === 0) {
       src: key,
     };
   });
+
+  // 2. Scan public/uploads for existing files
+  try {
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    const files = await fs.readdir(uploadsDir);
+
+    // We need 'sharp' to get dimensions for existing uploads
+    const { default: sharp } = await import("sharp");
+
+    for (const file of files) {
+      if (file.match(/\.(jpg|jpeg|png|webp)$/i)) {
+        const filePath = path.join(uploadsDir, file);
+        try {
+          const buffer = await fs.readFile(filePath);
+          const metadata = await sharp(buffer).metadata();
+
+          initialImages.push({
+            id: file,
+            type: "upload",
+            src: `/uploads/${file}`,
+            width: metadata.width || 800,
+            height: metadata.height || 600,
+          });
+        } catch (err) {
+          console.error(`Failed to process upload ${file}:`, err);
+        }
+      }
+    }
+  } catch (e) {
+    // Directory might not exist or other error, ignore
+    console.log("No uploads found or error scanning uploads:", e);
+  }
+
+  storedImages = initialImages;
   await saveImages(storedImages);
 }
 
@@ -106,18 +144,18 @@ const validItems = itemsToRender.filter(
   description="A minimal, single-page photo gallery for Astro."
   htmlClass="dark horizontal-gallery"
 >
-  <div className="noise-overlay"></div>
+  <div class="noise-overlay"></div>
   
-  <main className="multi-column-container">
-    <header className="zen-header-multi">
-      <div className="zen-logo">
-        <div className="hanko"></div>
+  <main class="multi-column-container">
+    <header class="zen-header-multi">
+      <div class="zen-logo">
+        <div class="hanko"></div>
       </div>
-      <div className="zen-decoration-line"></div>
+      <div class="zen-decoration-line"></div>
     </header>
 
     <section 
-      className="multi-column-gallery" 
+      class="multi-column-gallery" 
       id="photoswipe"
     >
       {
@@ -131,12 +169,12 @@ const validItems = itemsToRender.filter(
           const aspectRatio = width / height;
           
           return (
-            <div className="gallery-item-multi" style={{ aspectRatio: `${aspectRatio}` }}>
+            <div class="gallery-item-multi" style={{ aspectRatio: `${aspectRatio}` }}>
               {isAlbum ? (
                 <a
                   href="#"
                   data-album-id={renderItem.id}
-                  className="group relative block w-full h-full overflow-hidden album-trigger"
+                  class="group relative block w-full h-full overflow-hidden album-trigger"
                 >
                   {(renderItem as RenderAlbum).coverAsset ? (
                     <Image
@@ -155,26 +193,25 @@ const validItems = itemsToRender.filter(
                       width={width}
                       height={height}
                       loading={index < 5 ? "eager" : "lazy"}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                   )}
                   
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500"></div>
+                  <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500"></div>
                   
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                    <div className="w-12 h-12 mb-4 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                      <Folder className="w-5 h-5 text-white" />
+                  <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                    <div class="w-12 h-12 mb-4 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                      <Folder class="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="text-2xl font-serif text-white tracking-widest uppercase mb-2">{(renderItem as RenderAlbum).title}</h3>
-                    <p className="text-white/80 font-mono text-xs tracking-wider">{(renderItem as RenderAlbum).images.length} Photos</p>
+                    <h3 class="text-2xl font-serif text-white tracking-widest uppercase mb-2">{(renderItem as RenderAlbum).title}</h3>
+                    <p class="text-white/80 font-mono text-xs tracking-wider">{(renderItem as RenderAlbum).images.length} Photos</p>
                   </div>
                 </a>
               ) : (
                 <a
                   href={typeof (renderItem as RenderImage).asset === 'object' ? (renderItem as RenderImage).asset!.src : (renderItem as RenderImage).src}
-                  target="_blank"
                   data-fancybox="gallery"
-                  className="group relative block w-full h-full overflow-hidden"
+                  class="group relative block w-full h-full overflow-hidden"
                 >
                   {(renderItem as RenderImage).asset ? (
                     <Image
@@ -193,14 +230,14 @@ const validItems = itemsToRender.filter(
                       width={renderItem.width}
                       height={renderItem.height}
                       loading={index < 5 ? "eager" : "lazy"}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   )}
                   
                   {(renderItem as RenderImage).exif && (
-                    <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                       {(renderItem as RenderImage).exif?.model && <p className="text-xs tracking-[0.3em] uppercase text-white/90 font-serif mb-2 border-b border-white/20 pb-2 inline-block">{(renderItem as RenderImage).exif?.model}</p>}
-                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-white/70 tracking-wider">
+                    <div class="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                       {(renderItem as RenderImage).exif?.model && <p class="text-xs tracking-[0.3em] uppercase text-white/90 font-serif mb-2 border-b border-white/20 pb-2 inline-block">{(renderItem as RenderImage).exif?.model}</p>}
+                       <div class="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-mono text-white/70 tracking-wider">
                           {(renderItem as RenderImage).exif?.focalLength && <span>{(renderItem as RenderImage).exif?.focalLength}mm</span>}
                           {(renderItem as RenderImage).exif?.fStop && <span>f/{(renderItem as RenderImage).exif?.fStop}</span>}
                           {(renderItem as RenderImage).exif?.shutterSpeed && <span>{(renderItem as RenderImage).exif?.shutterSpeed}</span>}
@@ -217,8 +254,8 @@ const validItems = itemsToRender.filter(
     </section>
   </main>
 
-  <a href="https://instagram.com/juniesdream" target="_blank" className="instagram-link" aria-label="Instagram">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+  <a href="https://instagram.com/juniesdream" target="_blank" class="instagram-link" aria-label="Instagram">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
   </a>
 
   <!-- Album Modals -->
@@ -236,7 +273,7 @@ const validItems = itemsToRender.filter(
 </BaseLayout>
 
 <script>
-  import { Fancybox } from "@fancyapps/ui/dist/fancybox/";
+  import { Fancybox } from "@fancyapps/ui";
 
   // Modal management
   function openAlbumModal(albumId: string) {
@@ -356,10 +393,7 @@ const validItems = itemsToRender.filter(
     threshold: Array.from({ length: 20 }, (_, i) => i * 0.05) // Create thresholds every 5%
   };
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      const element = entry.target as HTMLElement;
-      
+  const updateItemStyle = (element: HTMLElement, intersectionRatio: number = 0) => {
       // Calculate how far the element is from the center of the viewport
       const rect = element.getBoundingClientRect();
       const windowHeight = window.innerHeight;
@@ -371,6 +405,11 @@ const validItems = itemsToRender.filter(
       // Normalize distance (0 = center, 1 = far)
       let progress = Math.min(distanceFromCenter / maxDistance, 1);
       
+      // If majority is visible, force focus
+      if (intersectionRatio > 0.6) {
+        progress = 0;
+      }
+      
       // Invert for "focus" effect (1 = center, 0 = far)
       const focus = 1 - progress;
       
@@ -378,22 +417,30 @@ const validItems = itemsToRender.filter(
       // When centered: sharp, opaque, normal scale
       // When edges: blurred, transparent, slightly distorted
       
-      const blurAmount = progress * 8; // Max 8px blur
+      // Reduced blur by 30% (from 10/8 to ~5-7)
+      const blurAmount = progress * 5; 
       const opacity = 0.3 + (focus * 0.7); // Min 0.3 opacity
       const scale = 0.95 + (focus * 0.05); // Scale from 0.95 to 1.0
       const translateY = progress * 20; // Slight drift
+      const skewY = (rect.top - (windowHeight/2)) * 0.005; // Liquid distortion
       
       element.style.setProperty('--blur', `${blurAmount}px`);
       element.style.setProperty('--opacity', `${opacity}`);
       element.style.setProperty('--scale', `${scale}`);
       element.style.setProperty('--translateY', `${translateY}px`);
+      element.style.setProperty('--skew', `${skewY}deg`);
       
       // Add a class when it's "focused" enough to be interactive
-      if (focus > 0.8) {
+      if (focus > 0.8 || intersectionRatio > 0.6) {
         element.classList.add('in-focus');
       } else {
         element.classList.remove('in-focus');
       }
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      updateItemStyle(entry.target as HTMLElement, entry.intersectionRatio);
     });
   }, observerOptions);
 
@@ -401,30 +448,14 @@ const validItems = itemsToRender.filter(
     observer.observe(item);
   });
 
-  // Also update on scroll for smoother effect
+  // Also update on scroll for smoother effect, but checking visibility
   window.addEventListener('scroll', () => {
     items.forEach(item => {
+      // We rely on the observer for the "lock" state (intersectionRatio)
+      // but strictly speaking, we want to update the parallax/blur effect continuously
+      // as the user scrolls.
       const element = item as HTMLElement;
-      const rect = element.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const elementCenter = rect.top + rect.height / 2;
-      const windowCenter = windowHeight / 2;
-      const distanceFromCenter = Math.abs(windowCenter - elementCenter);
-      const maxDistance = windowHeight / 1.5;
-      
-      let progress = Math.min(distanceFromCenter / maxDistance, 1);
-      const focus = 1 - progress;
-      
-      const blurAmount = progress * 10;
-      const opacity = 0.2 + (focus * 0.8);
-      const scale = 0.92 + (focus * 0.08);
-      // Liquid distortion effect using skew
-      const skewY = (rect.top - (windowHeight/2)) * 0.005;
-      
-      element.style.setProperty('--blur', `${blurAmount}px`);
-      element.style.setProperty('--opacity', `${opacity}`);
-      element.style.setProperty('--scale', `${scale}`);
-      element.style.setProperty('--skew', `${skewY}deg`);
+      updateItemStyle(element, 0); 
     });
   }, { passive: true });
 </script>
@@ -518,6 +549,8 @@ const validItems = itemsToRender.filter(
 
   .gallery-item-multi {
     break-inside: avoid;
+    display: inline-block;
+    width: 100%;
     margin-bottom: 6rem; /* Lots of vertical space */
     position: relative;
     border-radius: 4px; /* Slight rounding */
@@ -530,11 +563,36 @@ const validItems = itemsToRender.filter(
     --translateY: 0px;
     
     /* The Melt Effect */
-    filter: blur(var(--blur));
+    /* Remove global filter blur, apply via mask instead */
     opacity: var(--opacity);
     transform: scale(var(--scale)) skewY(var(--skew)) translateY(var(--translateY));
-    will-change: transform, filter, opacity;
-    transition: filter 0.1s linear, opacity 0.1s linear, transform 0.1s linear;
+    will-change: transform, opacity, mask-image;
+    transition: opacity 0.1s linear, transform 0.1s linear;
+  }
+
+  /* Apply blur only to edges using mask-image and backdrop-filter simulation */
+  .gallery-item-multi::before {
+    content: "";
+    position: absolute;
+    inset: -20px;
+    background: inherit;
+    z-index: 2;
+    pointer-events: none;
+    backdrop-filter: blur(var(--blur));
+    mask-image: linear-gradient(to bottom, 
+      black 0%, 
+      transparent 15%, 
+      transparent 85%, 
+      black 100%
+    ), linear-gradient(to right, 
+      black 0%, 
+      transparent 15%, 
+      transparent 85%, 
+      black 100%
+    );
+    mask-composite: add;
+    opacity: 0.8; /* Subtle overlay */
+    transition: backdrop-filter 0.1s linear;
   }
 
   /* Frame/Matte Effect */

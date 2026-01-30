@@ -15,7 +15,8 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import React, { useId, useState } from "react";
+import type React from "react";
+import { useId, useRef, useState } from "react";
 import type { Album, GalleryItem, ImageRecord } from "../lib/imageStore";
 import type { Settings } from "../lib/settingsStore";
 import { Badge } from "./ui/badge";
@@ -50,11 +51,56 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState("images");
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const fileInputId = useId();
   const passwordInputId = useId();
 
   // Filter out albums for the upload selector
   const albums = images.filter((item): item is Album => item.type === "album");
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setUploadFiles(e.dataTransfer.files);
+      if (fileInputRef.current) {
+        fileInputRef.current.files = e.dataTransfer.files;
+      }
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setUploadFiles(e.target.files);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-primary-foreground">
@@ -158,6 +204,31 @@ export default function AdminDashboard({
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                {selectedItems.size > 0 && (
+                  <form
+                    method="POST"
+                    action="/admin"
+                    onSubmit={(e) => {
+                      if (!confirm(`Delete ${selectedItems.size} items?`)) {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    <input type="hidden" name="action" value="batchDelete" />
+                    <input
+                      type="hidden"
+                      name="ids"
+                      value={JSON.stringify(Array.from(selectedItems))}
+                    />
+                    <button
+                      type="submit"
+                      className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors text-sm"
+                    >
+                      Delete Selected ({selectedItems.size})
+                    </button>
+                  </form>
+                )}
+
                 <Badge
                   variant="outline"
                   className="h-7 px-3 rounded-full border-primary/20 bg-primary/5 text-primary"
@@ -299,6 +370,16 @@ export default function AdminDashboard({
                         className="group relative bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10"
                       >
                         <div className="aspect-[4/3] relative overflow-hidden bg-black/40">
+                          {/* Selection Checkbox */}
+                          <div className="absolute top-3 left-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <input
+                              type="checkbox"
+                              className="h-5 w-5 rounded border-white/20 bg-black/40 checked:bg-primary cursor-pointer"
+                              checked={selectedItems.has(img.id)}
+                              onChange={() => toggleSelection(img.id)}
+                            />
+                          </div>
+
                           <img
                             src={img.src}
                             alt={img.id}
@@ -418,7 +499,25 @@ export default function AdminDashboard({
                   </div>
 
                   <div className="px-8 pb-0">
-                    <div className="group relative flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-white/10 hover:border-primary/50 bg-black/20 hover:bg-primary/5 transition-all duration-500 cursor-pointer rounded-xl">
+                    <button
+                      type="button"
+                      aria-label="Upload file drop zone"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleUploadClick();
+                        }
+                      }}
+                      onClick={handleUploadClick}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`w-full group relative flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed transition-all duration-500 cursor-pointer rounded-xl outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                        isDragging
+                          ? "border-primary bg-primary/10"
+                          : "border-white/10 hover:border-primary/50 bg-black/20 hover:bg-primary/5"
+                      }`}
+                    >
                       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                       <div className="z-10 flex flex-col items-center p-8 text-center space-y-4">
@@ -426,33 +525,31 @@ export default function AdminDashboard({
                           <Upload className="h-10 w-10 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
 
-                        <Label
-                          htmlFor={fileInputId}
-                          className="cursor-pointer text-center space-y-2"
-                        >
+                        <div className="cursor-pointer text-center space-y-2">
                           <span className="text-2xl font-bold block text-foreground">
                             {uploadFiles && uploadFiles.length > 0
                               ? `${uploadFiles.length} file${uploadFiles.length !== 1 ? "s" : ""} selected`
-                              : "Drag & drop or click"}
+                              : isDragging
+                                ? "Drop files here"
+                                : "Drag & drop or click"}
                           </span>
                           <span className="text-sm text-muted-foreground block">
                             Supports high-res JPG, PNG, WebP
                           </span>
-                          <Input
-                            id={fileInputId}
-                            name="file"
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            required
-                            className="hidden"
-                            onChange={(e) => {
-                              setUploadFiles(e.target.files);
-                            }}
-                          />
-                        </Label>
+                        </div>
+                        <Input
+                          ref={fileInputRef}
+                          id={fileInputId}
+                          name="file"
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          required
+                          className="hidden"
+                          onChange={handleFileInputChange}
+                        />
                       </div>
-                    </div>
+                    </button>
                   </div>
 
                   <div className="p-6 bg-muted/30 border-t border-border flex justify-between items-center">

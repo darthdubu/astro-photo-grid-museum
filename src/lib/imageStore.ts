@@ -114,6 +114,24 @@ export async function deleteItem(id: string) {
   await saveImages(images);
 }
 
+export async function deleteItems(ids: string[]) {
+  let images = await getImages();
+  const idSet = new Set(ids);
+
+  // Filter root items
+  images = images.filter((i) => !idSet.has(i.id));
+
+  // Filter items inside albums
+  for (const item of images) {
+    if (item.type === "album") {
+      const album = item as Album;
+      album.images = album.images.filter((img) => !idSet.has(img.id));
+    }
+  }
+
+  await saveImages(images);
+}
+
 export async function updateImageOrder(newImages: GalleryItem[]) {
   await saveImages(newImages);
 }

@@ -9,6 +9,7 @@ import {
   addImage,
   createAlbum,
   deleteItem,
+  deleteItems,
   getImages,
   type ImageRecord,
   saveImages,
@@ -130,6 +131,18 @@ if (Astro.request.method === "POST") {
     } else if (action === "delete") {
       const id = formData.get("id") as string;
       await deleteItem(id);
+    } else if (action === "batchDelete") {
+      const idsString = formData.get("ids") as string;
+      if (idsString) {
+        try {
+          const ids = JSON.parse(idsString);
+          if (Array.isArray(ids)) {
+            await deleteItems(ids);
+          }
+        } catch (e) {
+          console.error("Failed to parse ids for batch delete", e);
+        }
+      }
     } else if (action === "moveUp") {
       const id = formData.get("id") as string;
       const images = await getImages();
