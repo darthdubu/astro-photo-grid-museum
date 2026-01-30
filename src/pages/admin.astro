@@ -2,10 +2,13 @@
 import { Buffer } from "node:buffer";
 import fs from "node:fs/promises";
 import path from "node:path";
+import exifReader from "exif-reader";
 import AdminDashboard from "../components/AdminDashboard";
 import Layout from "../layouts/BaseLayout.astro";
 import {
   addImage,
+  createAlbum,
+  deleteItem,
   getImages,
   type ImageRecord,
   saveImages,
@@ -47,8 +50,15 @@ if (Astro.request.method === "POST") {
       if (password) {
         await updatePassword(password);
       }
+    } else if (action === "createAlbum") {
+      const title = formData.get("title") as string;
+      const description = formData.get("description") as string;
+      if (title) {
+        await createAlbum(title, description || "");
+      }
     } else if (action === "upload") {
       const files = formData.getAll("file") as File[];
+      const albumId = formData.get("albumId") as string;
 
       for (const file of files) {
         if (file && file.size > 0) {
@@ -67,13 +77,43 @@ if (Astro.request.method === "POST") {
 
           let width = 800;
           let height = 600;
+          let exifData: ImageRecord["exif"];
+
           try {
             const { default: sharp } = await import("sharp");
-            const metadata = await sharp(buffer).metadata();
+            const image = sharp(buffer);
+            const metadata = await image.metadata();
             width = metadata.width || 800;
             height = metadata.height || 600;
+
+            if (metadata.exif) {
+              try {
+                const parsed = exifReader(metadata.exif) as any;
+
+                const formatShutter = (val?: number) => {
+                  if (!val) return undefined;
+                  if (val >= 1) return `${val}s`;
+                  return `1/${Math.round(1 / val)}`;
+                };
+
+                exifData = {
+                  iso: parsed.exif?.ISO,
+                  fStop: parsed.exif?.FNumber,
+                  shutterSpeed: formatShutter(parsed.exif?.ExposureTime),
+                  model: parsed.image?.Model,
+                  make: parsed.image?.Make,
+                  focalLength: parsed.exif?.FocalLength,
+                  lensModel: parsed.exif?.LensModel,
+                  date: parsed.exif?.DateTimeOriginal
+                    ? new Date(parsed.exif.DateTimeOriginal).toISOString()
+                    : undefined,
+                };
+              } catch (e) {
+                console.warn("Failed to parse EXIF", e);
+              }
+            }
           } catch (e) {
-            console.error("Failed to get dimensions", e);
+            console.error("Failed to get dimensions/exif", e);
           }
 
           const newImage: ImageRecord = {
@@ -82,15 +122,14 @@ if (Astro.request.method === "POST") {
             src: `/uploads/${filename}`,
             width,
             height,
+            exif: exifData,
           };
-          await addImage(newImage);
+          await addImage(newImage, albumId || undefined);
         }
       }
     } else if (action === "delete") {
       const id = formData.get("id") as string;
-      let images = await getImages();
-      images = images.filter((img) => img.id !== id);
-      await saveImages(images);
+      await deleteItem(id);
     } else if (action === "moveUp") {
       const id = formData.get("id") as string;
       const images = await getImages();
@@ -123,5 +162,5 @@ const settings = await getSettings();
 ---
 
 <Layout title="Admin Panel" description="Manage your photo grid" htmlClass="dark">
-  <AdminDashboard client:load images={images} settings={settings} />
+  <AdminDashboard images={images} settings={settings} client:load />
 </Layout>

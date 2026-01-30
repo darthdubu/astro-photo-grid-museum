@@ -7,11 +7,28 @@
     "height": 2160
   },
   {
-    "id": "1769729515228-xcs1th-wallhaven-d83pkl.jpg",
-    "type": "upload",
-    "src": "/uploads/1769729515228-xcs1th-wallhaven-d83pkl.jpg",
-    "width": 7680,
-    "height": 4320
+    "id": "album-1769741367890",
+    "type": "album",
+    "title": "Test Album",
+    "description": "This is a test album for verification",
+    "images": [
+      {
+        "id": "1769741666844-npipeh-1769728310274-wallhaven-yq5o8k.jpg",
+        "type": "upload",
+        "src": "/uploads/1769741666844-npipeh-1769728310274-wallhaven-yq5o8k.jpg",
+        "width": 3500,
+        "height": 1969,
+        "exif": {}
+      }
+    ],
+    "coverImage": {
+      "id": "1769741666844-npipeh-1769728310274-wallhaven-yq5o8k.jpg",
+      "type": "upload",
+      "src": "/uploads/1769741666844-npipeh-1769728310274-wallhaven-yq5o8k.jpg",
+      "width": 3500,
+      "height": 1969,
+      "exif": {}
+    }
   },
   {
     "id": "1769729515208-cpo1uu-wallhaven-9ozwkk.png",
@@ -19,6 +36,20 @@
     "src": "/uploads/1769729515208-cpo1uu-wallhaven-9ozwkk.png",
     "width": 3840,
     "height": 2160
+  },
+  {
+    "id": "1769729515228-xcs1th-wallhaven-d83pkl.jpg",
+    "type": "upload",
+    "src": "/uploads/1769729515228-xcs1th-wallhaven-d83pkl.jpg",
+    "width": 7680,
+    "height": 4320,
+    "exif": {
+      "model": "Canon EOS R5",
+      "focalLength": "85",
+      "fStop": "1.8",
+      "shutterSpeed": "1/125",
+      "iso": "400"
+    }
   },
   {
     "id": "1769729515182-kshfd-wallhaven-vpz9r5.jpg",

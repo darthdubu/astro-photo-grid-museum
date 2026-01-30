@@ -1,0 +1,180 @@
+---
+import { X } from "lucide-react";
+import type { Album, ImageRecord } from "../lib/imageStore";
+
+export interface Props {
+  album: Album;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const { album, isOpen, onClose } = Astro.props;
+
+// Calculate aspect ratios for justified layout
+const getJustifiedLayout = (
+  images: ImageRecord[],
+  containerWidth: number,
+  gap: number,
+  minHeight: number,
+) => {
+  const rows: ImageRecord[][] = [];
+  let currentRow: ImageRecord[] = [];
+  let currentRowWidth = 0;
+
+  images.forEach((image) => {
+    const width = image.width || 800;
+    const height = image.height || 600;
+    const aspectRatio = width / height;
+    currentRow.push(image);
+    currentRowWidth += aspectRatio;
+
+    if (currentRowWidth * minHeight >= containerWidth) {
+      rows.push(currentRow);
+      currentRow = [];
+      currentRowWidth = 0;
+    }
+  });
+
+  if (currentRow.length > 0) {
+    rows.push(currentRow);
+  }
+
+  return rows;
+};
+
+// For initial render, use a reasonable container width
+const containerWidth = 1200;
+const gap = 8;
+const minHeight = 200;
+const rows = getJustifiedLayout(album.images, containerWidth, gap, minHeight);
+---
+
+<div 
+  id={`album-modal-${album.id}`}
+  class:list={[
+    "fixed inset-0 z-[100] transition-opacity duration-300",
+    isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+  ]}
+  data-album-id={album.id}
+>
+  <!-- Backdrop -->
+  <div 
+    class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+    onclick={onClose}
+  />
+  
+  <!-- Modal Content -->
+  <div class="relative h-full w-full overflow-hidden">
+    <div class="flex h-full">
+      <!-- Sidebar -->
+      <div class="w-80 bg-background/95 backdrop-blur-xl border-r border-border p-8 flex flex-col">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-serif text-foreground">{album.title}</h2>
+          <button
+            onclick={onClose}
+            class="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            aria-label="Close album"
+          >
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto">
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-sm font-medium text-muted-foreground mb-2">Description</h3>
+              <p class="text-sm text-foreground/80 leading-relaxed">
+                {album.description || "No description available."}
+              </p>
+            </div>
+            
+            <div>
+              <h3 class="text-sm font-medium text-muted-foreground mb-2">Details</h3>
+              <div class="space-y-1 text-sm text-foreground/70">
+                <p>{album.images.length} photos</p>
+                <p>Created {new Date(album.id.replace('album-', '')).toLocaleDateString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Gallery Area -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="p-8">
+          <div class="space-y-2">
+            {rows.map((row) => (
+              <div 
+                class="flex gap-2"
+                style={{
+                  height: `${Math.min(minHeight, (containerWidth - (row.length - 1) * gap) / row.reduce((sum, img) => sum + (img.width || 800) / (img.height || 600), 0))}px`
+                }}
+              >
+                {row.map((image) => {
+                  const width = image.width || 800;
+                  const height = image.height || 600;
+                  return (
+                    <a
+                      href={image.src}
+                      data-fancybox={`album-${album.id}`}
+                      data-caption={`${image.exif?.model || ''} • ${image.exif?.focalLength || ''}mm f/${image.exif?.fStop || ''} • ${image.exif?.shutterSpeed || ''} ISO ${image.exif?.iso || ''}`}
+                      class="relative group block overflow-hidden bg-muted rounded-md"
+                      style={{
+                        width: `${((containerWidth - (row.length - 1) * gap) / row.reduce((sum, img) => sum + (img.width || 800) / (img.height || 600), 0)) * (width / height)}px`,
+                        flex: `${(width / height)}`
+                      }}
+                    >
+                      <img
+                        src={image.src}
+                        alt={`Photo from ${album.title}`}
+                        class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      
+                      {/* EXIF Overlay */}
+                      {image.exif && (
+                        <div class="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-out delay-[2000ms] pointer-events-none flex flex-col items-center justify-end text-center">
+                          {image.exif.model && <p class="text-[10px] tracking-[0.2em] uppercase text-white/90 font-serif mb-1 drop-shadow-md">{image.exif.model}</p>}
+                          <div class="flex gap-2 text-[9px] font-mono text-white/70 tracking-wider drop-shadow-md">
+                            {image.exif.focalLength && <span>{image.exif.focalLength}mm</span>}
+                            {image.exif.fStop && <span>f/{image.exif.fStop}</span>}
+                            {image.exif.shutterSpeed && <span>{image.exif.shutterSpeed}</span>}
+                            {image.exif.iso && <span>ISO {image.exif.iso}</span>}
+                          </div>
+                        </div>
+                      )}
+                    </a>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ albumId: album.id }}>
+  const modal = document.getElementById(`album-modal-${albumId}`);
+  
+  if (modal) {
+    // Close on backdrop click
+    const backdrop = modal.querySelector('.bg-black\\/80');
+    if (backdrop) {
+      backdrop.addEventListener('click', () => {
+        const event = new CustomEvent('close-album-modal', { detail: { albumId } });
+        document.dispatchEvent(event);
+      });
+    }
+
+    // Close on button click
+    const closeBtn = modal.querySelector('button[aria-label="Close album"]');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        const event = new CustomEvent('close-album-modal', { detail: { albumId } });
+        document.dispatchEvent(event);
+      });
+    }
+  }
+</script>

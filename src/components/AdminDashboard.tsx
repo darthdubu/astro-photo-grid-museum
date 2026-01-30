@@ -1,7 +1,11 @@
+"use client";
+
 import {
   ArrowDown,
   ArrowUp,
   ExternalLink,
+  Folder,
+  FolderPlus,
   Image as ImageIcon,
   LayoutGrid,
   Lock,
@@ -12,7 +16,7 @@ import {
   Upload,
 } from "lucide-react";
 import React, { useId, useState } from "react";
-import type { ImageRecord } from "../lib/imageStore";
+import type { Album, GalleryItem, ImageRecord } from "../lib/imageStore";
 import type { Settings } from "../lib/settingsStore";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -23,11 +27,20 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 
 interface AdminDashboardProps {
-  images: ImageRecord[];
+  images: GalleryItem[];
   settings: Settings;
 }
 
@@ -39,6 +52,9 @@ export default function AdminDashboard({
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
   const fileInputId = useId();
   const passwordInputId = useId();
+
+  // Filter out albums for the upload selector
+  const albums = images.filter((item): item is Album => item.type === "album");
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-primary-foreground">
@@ -138,15 +154,57 @@ export default function AdminDashboard({
                   Gallery
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                  Manage and organize your portfolio.
+                  Manage albums and photos.
                 </p>
               </div>
-              <Badge
-                variant="outline"
-                className="h-7 px-3 rounded-full border-primary/20 bg-primary/5 text-primary"
-              >
-                {images.length} Items
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="h-7 px-3 rounded-full border-primary/20 bg-primary/5 text-primary"
+                >
+                  {images.length} Items
+                </Badge>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="rounded-full gap-2">
+                      <FolderPlus className="h-4 w-4" />
+                      New Album
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Album</DialogTitle>
+                      <DialogDescription>
+                        Group your photos into a collection.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form method="POST" className="space-y-4 mt-4">
+                      <input type="hidden" name="action" value="createAlbum" />
+                      <div className="space-y-2">
+                        <Label htmlFor="album-title">Title</Label>
+                        <Input
+                          id={`${fileInputId}-album-title`}
+                          name="title"
+                          placeholder="e.g. Summer 2026"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="album-desc">Description</Label>
+                        <Textarea
+                          id={`${fileInputId}-album-desc`}
+                          name="description"
+                          placeholder="Optional description..."
+                        />
+                      </div>
+                      <Button type="submit" className="w-full">
+                        Create Album
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
 
             {images.length === 0 ? (
@@ -158,7 +216,7 @@ export default function AdminDashboard({
                   Gallery is empty
                 </h3>
                 <p className="text-muted-foreground max-w-xs mt-2 mb-8">
-                  Upload your first photos to get started with your portfolio.
+                  Upload your first photos or create an album to get started.
                 </p>
                 <Button
                   onClick={() => setActiveTab("upload")}
@@ -170,76 +228,151 @@ export default function AdminDashboard({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {images.map((img, index) => (
-                  <div
-                    key={img.id}
-                    className="group relative bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10"
-                  >
-                    <div className="aspect-[4/3] relative overflow-hidden bg-black/40">
-                      <img
-                        src={img.src}
-                        alt={img.id}
-                        className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                        <Badge className="bg-black/60 backdrop-blur-md border border-white/10 text-white">
-                          {img.width} × {img.height}
-                        </Badge>
-                      </div>
-
-                      <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                        <div className="flex gap-2">
-                          <form method="POST" className="contents">
-                            <input type="hidden" name="action" value="moveUp" />
-                            <input type="hidden" name="id" value={img.id} />
-                            <Button
-                              type="submit"
-                              variant="secondary"
-                              size="icon"
-                              className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 border-0 text-white"
-                              disabled={index === 0}
-                            >
-                              <ArrowUp className="h-4 w-4" />
-                            </Button>
-                          </form>
-                          <form method="POST" className="contents">
-                            <input
-                              type="hidden"
-                              name="action"
-                              value="moveDown"
+                {images.map((item, index) => {
+                  if (item.type === "album") {
+                    // Render Album Card
+                    return (
+                      <div
+                        key={item.id}
+                        className="group relative bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10"
+                      >
+                        <div className="aspect-[4/3] relative overflow-hidden bg-black/40 flex flex-col">
+                          {/* Album Cover Preview */}
+                          {item.coverImage ? (
+                            <img
+                              src={item.coverImage.src}
+                              alt={item.title}
+                              className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
                             />
-                            <input type="hidden" name="id" value={img.id} />
-                            <Button
-                              type="submit"
-                              variant="secondary"
-                              size="icon"
-                              className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 border-0 text-white"
-                              disabled={index === images.length - 1}
-                            >
-                              <ArrowDown className="h-4 w-4" />
-                            </Button>
-                          </form>
-                        </div>
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-zinc-800">
+                              <Folder className="w-16 h-16 text-white/10" />
+                            </div>
+                          )}
 
-                        <form method="POST" className="contents">
-                          <input type="hidden" name="action" value="delete" />
-                          <input type="hidden" name="id" value={img.id} />
-                          <Button
-                            type="submit"
-                            variant="destructive"
-                            size="icon"
-                            className="h-8 w-8 rounded-full"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </form>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+                          <div className="relative z-10 flex-1 p-6 flex flex-col justify-end">
+                            <div className="flex items-center gap-2 text-primary mb-1">
+                              <Folder className="w-4 h-4" />
+                              <span className="text-xs font-medium uppercase tracking-wider">
+                                Album
+                              </span>
+                            </div>
+                            <h3 className="text-xl font-bold text-white leading-tight">
+                              {item.title}
+                            </h3>
+                            <p className="text-sm text-white/60 mt-1 line-clamp-1">
+                              {item.images.length} photos
+                            </p>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 flex gap-2">
+                            <form method="POST" className="contents">
+                              <input
+                                type="hidden"
+                                name="action"
+                                value="delete"
+                              />
+                              <input type="hidden" name="id" value={item.id} />
+                              <Button
+                                type="submit"
+                                variant="destructive"
+                                size="icon"
+                                className="h-8 w-8 rounded-full"
+                                title="Delete Album"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </form>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  } else {
+                    // Render Image Card
+                    const img = item as ImageRecord;
+                    return (
+                      <div
+                        key={img.id}
+                        className="group relative bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10"
+                      >
+                        <div className="aspect-[4/3] relative overflow-hidden bg-black/40">
+                          <img
+                            src={img.src}
+                            alt={img.id}
+                            className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                            <Badge className="bg-black/60 backdrop-blur-md border border-white/10 text-white">
+                              {img.width} × {img.height}
+                            </Badge>
+                          </div>
+
+                          <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+                            <div className="flex gap-2">
+                              <form method="POST" className="contents">
+                                <input
+                                  type="hidden"
+                                  name="action"
+                                  value="moveUp"
+                                />
+                                <input type="hidden" name="id" value={img.id} />
+                                <Button
+                                  type="submit"
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 border-0 text-white"
+                                  disabled={index === 0}
+                                >
+                                  <ArrowUp className="h-4 w-4" />
+                                </Button>
+                              </form>
+                              <form method="POST" className="contents">
+                                <input
+                                  type="hidden"
+                                  name="action"
+                                  value="moveDown"
+                                />
+                                <input type="hidden" name="id" value={img.id} />
+                                <Button
+                                  type="submit"
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 border-0 text-white"
+                                  disabled={index === images.length - 1}
+                                >
+                                  <ArrowDown className="h-4 w-4" />
+                                </Button>
+                              </form>
+                            </div>
+
+                            <form method="POST" className="contents">
+                              <input
+                                type="hidden"
+                                name="action"
+                                value="delete"
+                              />
+                              <input type="hidden" name="id" value={img.id} />
+                              <Button
+                                type="submit"
+                                variant="destructive"
+                                size="icon"
+                                className="h-8 w-8 rounded-full"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
               </div>
             )}
           </div>
@@ -265,39 +398,60 @@ export default function AdminDashboard({
                 >
                   <input type="hidden" name="action" value="upload" />
 
-                  <div className="group relative flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-white/10 hover:border-primary/50 bg-black/20 hover:bg-primary/5 transition-all duration-500 cursor-pointer">
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  {/* Album Selector */}
+                  <div className="px-8 pt-8">
+                    <Label htmlFor="album-select" className="mb-2 block">
+                      Upload to
+                    </Label>
+                    <select
+                      id={`${fileInputId}-album-select`}
+                      name="albumId"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Root Gallery</option>
+                      {albums.map((album) => (
+                        <option key={album.id} value={album.id}>
+                          {album.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    <div className="z-10 flex flex-col items-center p-8 text-center space-y-4">
-                      <div className="h-20 w-20 rounded-full bg-background flex items-center justify-center shadow-2xl ring-1 ring-border group-hover:scale-110 transition-transform duration-500">
-                        <Upload className="h-10 w-10 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <div className="px-8 pb-0">
+                    <div className="group relative flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-white/10 hover:border-primary/50 bg-black/20 hover:bg-primary/5 transition-all duration-500 cursor-pointer rounded-xl">
+                      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                      <div className="z-10 flex flex-col items-center p-8 text-center space-y-4">
+                        <div className="h-20 w-20 rounded-full bg-background flex items-center justify-center shadow-2xl ring-1 ring-border group-hover:scale-110 transition-transform duration-500">
+                          <Upload className="h-10 w-10 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+
+                        <Label
+                          htmlFor={fileInputId}
+                          className="cursor-pointer text-center space-y-2"
+                        >
+                          <span className="text-2xl font-bold block text-foreground">
+                            {uploadFiles && uploadFiles.length > 0
+                              ? `${uploadFiles.length} file${uploadFiles.length !== 1 ? "s" : ""} selected`
+                              : "Drag & drop or click"}
+                          </span>
+                          <span className="text-sm text-muted-foreground block">
+                            Supports high-res JPG, PNG, WebP
+                          </span>
+                          <Input
+                            id={fileInputId}
+                            name="file"
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            required
+                            className="hidden"
+                            onChange={(e) => {
+                              setUploadFiles(e.target.files);
+                            }}
+                          />
+                        </Label>
                       </div>
-
-                      <Label
-                        htmlFor={fileInputId}
-                        className="cursor-pointer text-center space-y-2"
-                      >
-                        <span className="text-2xl font-bold block text-foreground">
-                          {uploadFiles && uploadFiles.length > 0
-                            ? `${uploadFiles.length} file${uploadFiles.length !== 1 ? "s" : ""} selected`
-                            : "Drag & drop or click"}
-                        </span>
-                        <span className="text-sm text-muted-foreground block">
-                          Supports high-res JPG, PNG, WebP
-                        </span>
-                        <Input
-                          id={fileInputId}
-                          name="file"
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          required
-                          className="hidden"
-                          onChange={(e) => {
-                            setUploadFiles(e.target.files);
-                          }}
-                        />
-                      </Label>
                     </div>
                   </div>
 
@@ -452,7 +606,7 @@ export default function AdminDashboard({
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Version</span>
-                    <span className="font-mono">v1.2.0</span>
+                    <span className="font-mono">v1.3.0</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Storage</span>

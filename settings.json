@@ -1,0 +1,9 @@
+{
+  "gallery": {
+    "minHeight": 250,
+    "gap": 4,
+    "wideAspectRatioThreshold": 1.5,
+    "tallAspectRatioThreshold": 0,
+    "largeImageMinHeight": 300
+  }
+}

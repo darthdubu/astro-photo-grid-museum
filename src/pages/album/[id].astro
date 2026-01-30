@@ -1,0 +1,229 @@
+---
+import { Image } from "astro:assets";
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
+import { getImages, type ImageRecord, type Album, type GalleryItem } from "../../lib/imageStore";
+import { getSettings } from "../../lib/settingsStore";
+import { ArrowLeft } from "lucide-react";
+
+export const prerender = false;
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/");
+
+const images = await getImages();
+const album = images.find(img => img.type === "album" && img.id === id) as Album | undefined;
+
+if (!album) {
+  return Astro.redirect("/404");
+}
+
+const localImagesGlob = import.meta.glob<{ default: ImageMetadata }>(
+  "../../images/*.{jpg,jpeg,png,webp}",
+);
+
+const settings = await getSettings();
+const { gallery } = settings;
+
+interface RenderImage extends ImageRecord {
+  asset?: ImageMetadata;
+  width: number;
+  height: number;
+}
+
+const imagesToRender: (RenderImage | null)[] = await Promise.all(
+  album.images.map(async (img) => {
+    if (img.type === "local") {
+      const loader = localImagesGlob[img.src];
+      if (loader) {
+        const { default: imageData } = await loader();
+        return {
+          ...img,
+          width: imageData.width,
+          height: imageData.height,
+          asset: imageData,
+        };
+      }
+      return null;
+    } else {
+      if (img.width && img.height) {
+        return img as RenderImage;
+      }
+      return null;
+    }
+  }),
+);
+
+const validImages = imagesToRender.filter(
+  (img): img is RenderImage => img !== null,
+);
+---
+
+<BaseLayout
+  title={`${album.title} | Astro Photo Grid`}
+  description={album.description}
+  htmlClass="dark"
+>
+  <div class="noise-overlay"></div>
+  
+  <div class="flex flex-col lg:flex-row min-h-screen">
+    {/* Sidebar / Info Area */}
+    <aside class="w-full lg:w-[400px] p-8 lg:p-12 lg:h-screen lg:sticky lg:top-0 flex flex-col justify-between bg-zinc-900/80 backdrop-blur-sm border-r border-white/5 z-20">
+      <div>
+        <a href="/" class="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-12 group">
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span class="text-sm font-medium tracking-wide">Back to Gallery</span>
+        </a>
+        
+        <h1 class="text-4xl lg:text-5xl font-serif text-white leading-tight mb-6">{album.title}</h1>
+        <p class="text-white/70 leading-relaxed font-light text-lg">{album.description}</p>
+      </div>
+
+      <div class="mt-12 lg:mt-0 pt-8 border-t border-white/10">
+        <p class="text-white/40 text-xs tracking-widest uppercase">
+            {validImages.length} Photographs
+        </p>
+      </div>
+    </aside>
+
+    {/* Gallery Grid */}
+    <main class="flex-1 p-4 lg:p-8 bg-black/20">
+      <section 
+        class="justified-gallery" 
+        id="photoswipe"
+        style={`--min-height: ${gallery.minHeight}px; --space: ${gallery.gap}px; --large-min-height: ${gallery.largeImageMinHeight}px;`}
+      >
+        {
+          validImages.map((image, index) => {
+            return (
+              <a
+                style={`--width: ${image.width}; --height: ${image.height};${image.width / image.height > gallery.wideAspectRatioThreshold || image.width / image.height < gallery.tallAspectRatioThreshold ? " --min-height: var(--large-min-height);" : ""}`}
+                href={typeof image.asset === 'object' ? image.asset.src : image.src}
+                target="_blank"
+                data-fancybox="gallery"
+                class="group relative block"
+              >
+                {image.asset ? (
+                  <Image
+                    format="webp"
+                    src={image.asset}
+                    alt=""
+                    width={image.width}
+                    height={image.height}
+                    loading={index < 20 ? "eager" : "lazy"}
+                  />
+                ) : (
+                  <img
+                    src={image.src}
+                    alt=""
+                    width={image.width}
+                    height={image.height}
+                    loading={index < 20 ? "eager" : "lazy"}
+                  />
+                )}
+                
+                {image.exif && (
+                  <div class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-out delay-[2000ms] pointer-events-none flex flex-col items-center justify-end text-center pb-3 z-10">
+                     {image.exif.model && <p class="text-[10px] tracking-[0.2em] uppercase text-white/90 font-serif mb-1.5 drop-shadow-md">{image.exif.model}</p>}
+                     <div class="flex gap-3 text-[9px] font-mono text-white/70 tracking-wider drop-shadow-md">
+                        {image.exif.focalLength && <span>{image.exif.focalLength}mm</span>}
+                        {image.exif.fStop && <span>f/{image.exif.fStop}</span>}
+                        {image.exif.shutterSpeed && <span>{image.exif.shutterSpeed}</span>}
+                        {image.exif.iso && <span>ISO {image.exif.iso}</span>}
+                     </div>
+                  </div>
+                )}
+              </a>
+            );
+          })
+        }
+      </section>
+    </main>
+  </div>
+</BaseLayout>
+
+<script>
+  import { Fancybox } from "@fancyapps/ui/dist/fancybox/";
+
+  Fancybox.bind("[data-fancybox]", {
+    theme: "auto",
+    mainStyle: {
+      "--f-button-width": "44px",
+      "--f-button-height": "44px",
+      "--f-button-border-radius": "50%",
+      "--f-toolbar-padding": "16px",
+    },
+    Carousel: {
+      Arrows: false,
+      Toolbar: {
+        display: {
+          left: [],
+          middle: [],
+          right: ["close"],
+        },
+      },
+      transition: "slide",
+    },
+  });
+</script>
+
+<style>
+  /* Reuse justified gallery styles */
+  .justified-gallery {
+    --padding: max(0.8vw, 4px);
+    --space: max(0.8vw, 4px);
+    --min-height: clamp(200px, 20vw, 400px);
+
+    padding: var(--padding);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space);
+
+    a {
+      flex-grow: calc(var(--width) * (100000 / var(--height)));
+      flex-basis: calc(var(--min-height) * (var(--width) / var(--height)));
+      aspect-ratio: var(--width) / var(--height);
+      overflow: hidden;
+      opacity: 1;
+      transition: opacity 0.3s ease-in-out;
+    }
+    
+    a img {
+      display: block;
+      object-fit: cover;
+      height: 100%;
+      width: 100%;
+      transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    a:hover img {
+      transform: scale(1.05);
+    }
+
+    a:focus-visible {
+      outline: 3px solid var(--outline);
+      outline-offset: 2px;
+      transform: scale(1.05);
+      z-index: 1;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    &::after {
+      content: " ";
+      flex-grow: 1000000000;
+    }
+  }
+
+  .noise-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+</style>
