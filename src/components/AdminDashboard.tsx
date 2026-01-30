@@ -143,8 +143,80 @@ export default function AdminDashboard({
     }
   };
 
+  const handleSelectAll = () => {
+    if (selectedItems.size === images.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(images.map((img) => img.id)));
+    }
+  };
+
+  const [draggedItem, setDraggedItem] = useState<GalleryItem | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, item: GalleryItem) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = "move";
+    // Transparent drag image
+    const img = new Image();
+    img.src =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const handleDragOverItem = (e: React.DragEvent, targetItem: GalleryItem) => {
+    e.preventDefault();
+    if (!draggedItem || draggedItem.id === targetItem.id) return;
+
+    // Optional: Visual indicator could go here, but for now we'll just reorder on drop
+    // or live reorder if we want to be fancy. Live reorder in local state is better UX.
+
+    // Simple approach: Reorder on Drop.
+    // Better approach: Live sort (requires moving items in the array)
+  };
+
+  // Let's implement live sorting in local state for better UX
+  // We need a local state copy of images
+  const [localImages, setLocalImages] = useState(images);
+
+  // Update local images when props change
+  useEffect(() => {
+    setLocalImages(images);
+  }, [images]);
+
+  const handleDragEnter = (e: React.DragEvent, targetItem: GalleryItem) => {
+    if (!draggedItem || draggedItem.id === targetItem.id) return;
+
+    const oldIndex = localImages.findIndex((i) => i.id === draggedItem.id);
+    const newIndex = localImages.findIndex((i) => i.id === targetItem.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newItems = [...localImages];
+      const [removed] = newItems.splice(oldIndex, 1);
+      newItems.splice(newIndex, 0, removed);
+      setLocalImages(newItems);
+    }
+  };
+
+  const handleDropItem = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDraggedItem(null);
+
+    // Save order to backend
+    const ids = localImages.map((img) => img.id);
+    try {
+      await fetch("/api/reorder-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+    } catch (err) {
+      console.error("Failed to save order", err);
+      // Revert?
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-primary-foreground">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-primary-foreground flex flex-col">
       {/* Background Gradients */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
@@ -152,7 +224,7 @@ export default function AdminDashboard({
       </div>
 
       <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
+        <div className="w-full max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-8">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-inner shadow-primary/20">
               <LayoutGrid className="h-5 w-5" />
@@ -232,7 +304,7 @@ export default function AdminDashboard({
         </div>
       </div>
 
-      <main className="container mx-auto py-10 px-4 sm:px-8 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <main className="w-full max-w-7xl mx-auto py-10 px-4 sm:px-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {activeTab === "images" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -245,6 +317,17 @@ export default function AdminDashboard({
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="rounded-full border-white/10 hover:bg-white/5"
+                >
+                  {selectedItems.size === localImages.length
+                    ? "Deselect All"
+                    : "Select All"}
+                </Button>
+
                 {selectedItems.size > 0 && (
                   <form
                     method="POST"
@@ -274,7 +357,7 @@ export default function AdminDashboard({
                   variant="outline"
                   className="h-7 px-3 rounded-full border-primary/20 bg-primary/5 text-primary"
                 >
-                  {images.length} Items
+                  {localImages.length} Items
                 </Badge>
 
                 <Dialog>
@@ -319,7 +402,7 @@ export default function AdminDashboard({
               </div>
             </div>
 
-            {images.length === 0 ? (
+            {localImages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center border border-dashed border-white/10 rounded-3xl bg-white/5">
                 <div className="rounded-full bg-white/5 p-6 mb-6">
                   <ImageIcon className="h-12 w-12 text-muted-foreground/50" />
@@ -340,13 +423,18 @@ export default function AdminDashboard({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {images.map((item, index) => {
+                {localImages.map((item, index) => {
                   if (item.type === "album") {
                     // Render Album Card
                     return (
                       <div
                         key={item.id}
-                        className="group relative bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, item)}
+                        onDragOver={(e) => handleDragOverItem(e, item)}
+                        onDragEnter={(e) => handleDragEnter(e, item)}
+                        onDrop={handleDropItem}
+                        className={`group relative bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 ${draggedItem?.id === item.id ? "opacity-50" : ""}`}
                       >
                         <div className="aspect-[4/3] relative overflow-hidden bg-black/40 flex flex-col">
                           {/* Album Cover Preview */}
@@ -408,7 +496,12 @@ export default function AdminDashboard({
                     return (
                       <div
                         key={img.id}
-                        className="group relative bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, img)}
+                        onDragOver={(e) => handleDragOverItem(e, img)}
+                        onDragEnter={(e) => handleDragEnter(e, img)}
+                        onDrop={handleDropItem}
+                        className={`group relative bg-zinc-900/50 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 ${draggedItem?.id === img.id ? "opacity-50" : ""}`}
                       >
                         <div className="aspect-[4/3] relative overflow-hidden bg-black/40">
                           {/* Selection Checkbox */}
