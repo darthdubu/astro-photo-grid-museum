@@ -91,7 +91,7 @@ if (Astro.request.method === "POST") {
 
             // Ensure directory exists
             await fs.mkdir(path.dirname(uploadPath), { recursive: true });
-            await fs.writeFile(uploadPath, buffer);
+            await fs.writeFile(uploadPath, buffer, "binary");
             imageSrc = `/uploads/${filename}`;
           }
 

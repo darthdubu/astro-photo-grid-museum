@@ -34,3 +34,4 @@ playwright-report/
 # backups
 src/images_backup/
 .vercel
+.env*.local
