@@ -132,12 +132,13 @@ const itemsToRender: (RenderItem | null)[] = await Promise.all(
       }
       return null;
     } else {
-      // For uploads, we assume width/height are present.
-      // If not, we might filter them out or provide defaults.
-      if (img.width && img.height) {
-        return img as RenderImage;
-      }
-      return null;
+      // For uploads, always return them if they have dimensions
+      // Provide defaults if dimensions are missing
+      return {
+        ...img,
+        width: img.width || 1920,
+        height: img.height || 1080,
+      } as RenderImage;
     }
   }),
 );
