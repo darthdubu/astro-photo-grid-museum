@@ -1,5 +1,4 @@
 ---
-import { Buffer } from "node:buffer";
 import fs from "node:fs/promises";
 import path from "node:path";
 import exifReader from "exif-reader";
@@ -150,32 +149,96 @@ if (Astro.request.method === "POST") {
     } else if (action === "delete") {
       const id = formData.get("id") as string;
       if (id) {
-        await deleteFromS3(id);
+        // Delete from S3 (if configured)
+        const s3Deleted = await deleteFromS3(id);
+        
+        // Delete from public/uploads (if local file exists)
+        const uploadPath = path.join(process.cwd(), "public", "uploads", id);
         try {
-          const uploadPath = path.join(process.cwd(), "public", "uploads", id);
           await fs.unlink(uploadPath);
-        } catch (e) {}
+          console.log(`Deleted local file: ${id}`);
+        } catch (e) {
+          // File might not exist (e.g., S3-only upload)
+          console.log(`Local file not found (may be S3): ${id}`);
+        }
+        
+        // Remove from images.json (do this regardless of file deletion success)
         await deleteItem(id);
+        
+        // Return success response
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            id, 
+            deletedFrom: {
+              s3: s3Deleted ? "S3" : "not configured",
+              local: "attempted"
+            }
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
       }
+      
+      return new Response(
+        JSON.stringify({ error: "No ID provided" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
     } else if (action === "batchDelete") {
       const idsString = formData.get("ids") as string;
       if (idsString) {
         try {
           const ids = JSON.parse(idsString);
           if (Array.isArray(ids)) {
+            const results = {
+              successful: [],
+              failed: [] as Array<{ id: string; error: string }>,
+            };
+            
             for (const id of ids) {
-              await deleteFromS3(id);
+              // Delete from S3 (if configured)
+              const s3Deleted = await deleteFromS3(id);
+              
+              // Delete from public/uploads (if local file exists)
+              const uploadPath = path.join(
+                process.cwd(),
+                "public",
+                "uploads",
+                id,
+              );
+              
+              let localDeleted = false;
+              let error = "";
+              
               try {
-                const uploadPath = path.join(
-                  process.cwd(),
-                  "public",
-                  "uploads",
-                  id,
-                );
                 await fs.unlink(uploadPath);
-              } catch (e) {}
+                localDeleted = true;
+                console.log(`Deleted local file: ${id}`);
+              } catch (e) {
+                // File might not exist (e.g., S3-only upload)
+                console.log(`Local file not found (may be S3): ${id}`);
+                error = e instanceof Error ? e.message : String(e);
+              }
+              
+              results.successful.push({
+                id,
+                deletedFrom: {
+                  s3: s3Deleted ? "S3" : "not configured",
+                  local: localDeleted ? "success" : "not found",
+                }
+              });
             }
+            
+            // Remove from images.json (do this regardless of individual deletion success)
             await deleteItems(ids);
+            
+            return new Response(
+              JSON.stringify({
+                success: true,
+                total: ids.length,
+                results,
+              }),
+              { status: 200, headers: { "Content-Type": "application/json" } },
+            );
           }
         } catch (e) {
           console.error("Failed to parse ids for batch delete", e);
