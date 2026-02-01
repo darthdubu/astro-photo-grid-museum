@@ -9,5 +9,12 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react"
   },
-  "exclude": ["node_modules", "dist", "public", "tests"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "public",
+    "tests",
+    "playwright.config.ts",
+    "*.spec.ts"
+  ]
 }
